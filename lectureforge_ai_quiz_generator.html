@@ -1,0 +1,1942 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-palette="blue">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LectureForge — Study Quiz Generator</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+  <!-- PDF.js & JSZip for client-side PDF and PPTX text extraction -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <style>
+    /* =========================================================================
+       FULL-CANVAS DESIGN TOKENS (LIGHT & DARK x RED, BLUE, GREEN)
+       ========================================================================= */
+    :root {
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    /* RED PALETTE — LIGHT */
+    [data-theme="light"][data-palette="red"] {
+      --bg-app: #FFF1F2;
+      --bg-ambient: radial-gradient(circle at 12% 10%, rgba(254, 202, 202, 0.72) 0%, transparent 48%),
+                    radial-gradient(circle at 88% 88%, rgba(251, 113, 133, 0.28) 0%, transparent 52%);
+      --bg-surface: #FFF8F8;
+      --bg-subtle: #FFE4E6;
+      --bg-elevated: #FFFFFF;
+      --border-color: #FECDD3;
+      --border-strong: #FDA4AF;
+      --text-primary: #4C0519;
+      --text-secondary: #881337;
+      --text-muted: #9F1239;
+      --shadow-card: 0 10px 28px -6px rgba(190, 18, 60, 0.12), 0 2px 6px rgba(190, 18, 60, 0.06);
+      --code-bg: #FFE4E6;
+      --accent: #E11D48;
+      --accent-hover: #BE123C;
+      --accent-gradient: linear-gradient(90deg, #E11D48, #FB7185, #E11D48);
+      --accent-light: rgba(225, 29, 72, 0.12);
+      --accent-border: rgba(225, 29, 72, 0.42);
+      --accent-glow: rgba(225, 29, 72, 0.28);
+      --accent-contrast: #FFFFFF;
+    }
+
+    /* RED PALETTE — DARK (Deep Wine / Crimson Canvas) */
+    [data-theme="dark"][data-palette="red"] {
+      --bg-app: #180609;
+      --bg-ambient: radial-gradient(circle at 14% 12%, rgba(159, 18, 57, 0.34) 0%, transparent 48%),
+                    radial-gradient(circle at 86% 86%, rgba(190, 24, 93, 0.22) 0%, transparent 52%);
+      --bg-surface: #250A0F;
+      --bg-subtle: #341017;
+      --bg-elevated: #43151E;
+      --border-color: #541925;
+      --border-strong: #782233;
+      --text-primary: #FFF1F2;
+      --text-secondary: #FECDD3;
+      --text-muted: #FDA4AF;
+      --shadow-card: 0 14px 34px -6px rgba(0, 0, 0, 0.72);
+      --code-bg: #1A070B;
+      --accent: #FB7185;
+      --accent-hover: #F43F5E;
+      --accent-gradient: linear-gradient(90deg, #E11D48, #FDA4AF, #E11D48);
+      --accent-light: rgba(251, 113, 133, 0.16);
+      --accent-border: rgba(251, 113, 133, 0.46);
+      --accent-glow: rgba(244, 63, 94, 0.32);
+      --accent-contrast: #1A0609;
+    }
+
+    /* BLUE PALETTE — LIGHT */
+    [data-theme="light"][data-palette="blue"] {
+      --bg-app: #EFF6FF;
+      --bg-ambient: radial-gradient(circle at 12% 10%, rgba(191, 219, 254, 0.75) 0%, transparent 48%),
+                    radial-gradient(circle at 88% 88%, rgba(125, 211, 252, 0.32) 0%, transparent 52%);
+      --bg-surface: #F8FBFF;
+      --bg-subtle: #DBEAFE;
+      --bg-elevated: #FFFFFF;
+      --border-color: #BFDBFE;
+      --border-strong: #93C5FD;
+      --text-primary: #0F172A;
+      --text-secondary: #1E3A8A;
+      --text-muted: #1D4ED8;
+      --shadow-card: 0 10px 28px -6px rgba(37, 99, 235, 0.12), 0 2px 6px rgba(37, 99, 235, 0.06);
+      --code-bg: #DBEAFE;
+      --accent: #2563EB;
+      --accent-hover: #1D4ED8;
+      --accent-gradient: linear-gradient(90deg, #2563EB, #38BDF8, #2563EB);
+      --accent-light: rgba(37, 99, 235, 0.12);
+      --accent-border: rgba(37, 99, 235, 0.42);
+      --accent-glow: rgba(37, 99, 235, 0.28);
+      --accent-contrast: #FFFFFF;
+    }
+
+    /* BLUE PALETTE — DARK (Deep Midnight Navy Canvas) */
+    [data-theme="dark"][data-palette="blue"] {
+      --bg-app: #070E1C;
+      --bg-ambient: radial-gradient(circle at 14% 12%, rgba(29, 78, 216, 0.32) 0%, transparent 48%),
+                    radial-gradient(circle at 86% 86%, rgba(2, 132, 199, 0.22) 0%, transparent 52%);
+      --bg-surface: #0D1930;
+      --bg-subtle: #142647;
+      --bg-elevated: #1C3461;
+      --border-color: #213D70;
+      --border-strong: #2F569C;
+      --text-primary: #F0F7FF;
+      --text-secondary: #DBEAFE;
+      --text-muted: #93C5FD;
+      --shadow-card: 0 14px 34px -6px rgba(0, 0, 0, 0.72);
+      --code-bg: #091224;
+      --accent: #60A5FA;
+      --accent-hover: #3B82F6;
+      --accent-gradient: linear-gradient(90deg, #2563EB, #7DD3FC, #2563EB);
+      --accent-light: rgba(96, 165, 250, 0.16);
+      --accent-border: rgba(96, 165, 250, 0.46);
+      --accent-glow: rgba(59, 130, 246, 0.32);
+      --accent-contrast: #071124;
+    }
+
+    /* GREEN PALETTE — LIGHT */
+    [data-theme="light"][data-palette="green"] {
+      --bg-app: #ECFDF5;
+      --bg-ambient: radial-gradient(circle at 12% 10%, rgba(167, 243, 208, 0.75) 0%, transparent 48%),
+                    radial-gradient(circle at 88% 88%, rgba(110, 231, 183, 0.32) 0%, transparent 52%);
+      --bg-surface: #F6FEF9;
+      --bg-subtle: #D1FAE5;
+      --bg-elevated: #FFFFFF;
+      --border-color: #A7F3D0;
+      --border-strong: #6EE7B7;
+      --text-primary: #052E16;
+      --text-secondary: #14532D;
+      --text-muted: #15803D;
+      --shadow-card: 0 10px 28px -6px rgba(22, 163, 74, 0.12), 0 2px 6px rgba(22, 163, 74, 0.06);
+      --code-bg: #D1FAE5;
+      --accent: #059669;
+      --accent-hover: #047857;
+      --accent-gradient: linear-gradient(90deg, #059669, #34D399, #059669);
+      --accent-light: rgba(5, 150, 105, 0.12);
+      --accent-border: rgba(5, 150, 105, 0.42);
+      --accent-glow: rgba(5, 150, 105, 0.28);
+      --accent-contrast: #FFFFFF;
+    }
+
+    /* GREEN PALETTE — DARK (Deep Forest Evergreen Canvas) */
+    [data-theme="dark"][data-palette="green"] {
+      --bg-app: #05150D;
+      --bg-ambient: radial-gradient(circle at 14% 12%, rgba(4, 120, 87, 0.34) 0%, transparent 48%),
+                    radial-gradient(circle at 86% 86%, rgba(21, 128, 61, 0.24) 0%, transparent 52%);
+      --bg-surface: #0B2418;
+      --bg-subtle: #113624;
+      --bg-elevated: #184A32;
+      --border-color: #1D563B;
+      --border-strong: #2A7853;
+      --text-primary: #ECFDF5;
+      --text-secondary: #D1FAE5;
+      --text-muted: #6EE7B7;
+      --shadow-card: 0 14px 34px -6px rgba(0, 0, 0, 0.72);
+      --code-bg: #071A11;
+      --accent: #34D399;
+      --accent-hover: #10B981;
+      --accent-gradient: linear-gradient(90deg, #059669, #6EE7B7, #059669);
+      --accent-light: rgba(52, 211, 153, 0.16);
+      --accent-border: rgba(52, 211, 153, 0.46);
+      --accent-glow: rgba(16, 185, 129, 0.32);
+      --accent-contrast: #041A10;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-app);
+      background-image: var(--bg-ambient);
+      background-attachment: fixed;
+      color: var(--text-primary);
+      transition: background-color 0.28s ease, color 0.28s ease;
+      overflow-x: hidden;
+    }
+
+    .surface-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-card);
+      transition: background-color 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease, transform 0.18s ease;
+    }
+
+    .surface-subtle {
+      background-color: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      transition: background-color 0.28s ease, border-color 0.28s ease;
+    }
+
+    .surface-elevated {
+      background-color: var(--bg-elevated);
+      border: 1px solid var(--border-strong);
+      transition: background-color 0.28s ease, border-color 0.28s ease;
+    }
+
+    .text-main { color: var(--text-primary); transition: color 0.28s ease; }
+    .text-sub { color: var(--text-secondary); transition: color 0.28s ease; }
+    .text-dim { color: var(--text-muted); transition: color 0.28s ease; }
+    .border-base { border-color: var(--border-color); }
+    .border-strong { border-color: var(--border-strong); }
+
+    .accent-bg {
+      background-color: var(--accent);
+      color: var(--accent-contrast);
+      transition: background-color 0.22s ease, transform 0.15s ease, box-shadow 0.22s ease;
+    }
+    .accent-bg:hover:not(:disabled) {
+      background-color: var(--accent-hover);
+      box-shadow: 0 8px 22px -5px var(--accent-glow);
+    }
+    .accent-bg:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    .accent-soft {
+      background-color: var(--accent-light);
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+      transition: background-color 0.28s ease, color 0.28s ease, border-color 0.28s ease;
+    }
+
+    .accent-text {
+      color: var(--accent);
+      transition: color 0.28s ease;
+    }
+
+    /* Selected Option / Box Card State */
+    .box-selected {
+      background-color: var(--accent-light) !important;
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 1px var(--accent), 0 8px 20px -6px var(--accent-glow);
+    }
+
+    .dropzone-active {
+      border-color: var(--accent) !important;
+      background-color: var(--accent-light) !important;
+    }
+
+    @keyframes progressShimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .progress-bar-animated {
+      background-image: var(--accent-gradient);
+      background-size: 200% 100%;
+      animation: progressShimmer 2.1s linear infinite;
+      box-shadow: 0 0 16px var(--accent-glow);
+      transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-fade-in {
+      animation: fadeIn 0.28s ease forwards;
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- =======================================================================
+       TOP NAVIGATION BAR (THEME + RED/BLUE/GREEN PALETTE SWITCHER)
+       ======================================================================= -->
+  <header class="sticky top-0 z-30 border-b border-base backdrop-blur-md" style="background-color: color-mix(in srgb, var(--bg-surface) 88%, transparent);">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+      <!-- Brand Logo -->
+      <button type="button" onclick="app.goHome()" class="flex items-center gap-3 text-left focus:outline-none group">
+        <div class="w-10 h-10 rounded-xl accent-bg flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-extrabold text-lg sm:text-xl tracking-tight text-main">LectureForge</span>
+            <span class="hidden sm:inline-block text-[11px] font-bold px-2 py-0.5 rounded-full accent-soft">Any Major • 100+ Qs</span>
+          </div>
+          <p class="text-[11px] text-dim hidden md:block">Turn slides, PDFs & notes into practice tests or timed exams</p>
+        </div>
+      </button>
+
+      <!-- Right Controls: Red / Blue / Green + Light / Dark Mode -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Color Palette Buttons -->
+        <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl surface-subtle" role="group" aria-label="Color Scheme">
+          <span class="text-xs font-semibold text-dim hidden lg:inline mr-1">Color:</span>
+          <button type="button" onclick="app.setPalette('red')" data-palette-btn="red"
+            class="px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition"
+            title="Red Theme">
+            <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+            <span>Red</span>
+          </button>
+          <button type="button" onclick="app.setPalette('blue')" data-palette-btn="blue"
+            class="px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition"
+            title="Blue Theme">
+            <span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span>
+            <span>Blue</span>
+          </button>
+          <button type="button" onclick="app.setPalette('green')" data-palette-btn="green"
+            class="px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition"
+            title="Green Theme">
+            <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+            <span>Green</span>
+          </button>
+        </div>
+
+        <!-- Light / Dark Toggle -->
+        <button type="button" onclick="app.toggleTheme()"
+          class="px-3 py-2 rounded-xl surface-subtle hover:border-strong text-xs sm:text-sm font-bold text-main flex items-center gap-2 transition"
+          aria-label="Toggle Light or Dark Mode">
+          <svg id="sunIcon" class="w-4 h-4 accent-text hidden" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <svg id="moonIcon" class="w-4 h-4 accent-text" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+          <span id="themeLabel">Dark</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full px-4 sm:px-0 pointer-events-none"></div>
+
+  <!-- =======================================================================
+       MAIN APPLICATION CONTAINER
+       ======================================================================= -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+    <!-- =====================================================================
+         VIEW 1: UPLOAD & QUIZ CONFIGURATION STUDIO
+         ===================================================================== -->
+    <section id="setupView" class="space-y-6 sm:space-y-8 animate-fade-in">
+      <!-- Hero Header -->
+      <div class="surface-card rounded-3xl p-6 sm:p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+        <div class="space-y-2 max-w-2xl">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-extrabold accent-soft">
+            <span>Custom Study Material</span>
+            <span>•</span>
+            <span>Up to 120 Questions</span>
+          </div>
+          <h1 class="text-2xl sm:text-4xl font-black tracking-tight text-main">
+            Upload your lecture slides. Master every detail.
+          </h1>
+          <p class="text-sm sm:text-base text-sub leading-relaxed">
+            Drop PDFs, PowerPoint decks, or text notes from any course—medicine, biology, engineering, law, or humanities—and generate structured quizzes in batches.
+          </p>
+        </div>
+
+        <!-- Quick Stats Pill Box -->
+        <div class="grid grid-cols-2 gap-3 shrink-0">
+          <div class="surface-subtle rounded-2xl p-4">
+            <div class="text-xs font-semibold text-dim">Extracted Words</div>
+            <div id="statWords" class="text-2xl font-black text-main mt-0.5">0</div>
+          </div>
+          <div class="surface-subtle rounded-2xl p-4">
+            <div class="text-xs font-semibold text-dim">Files Loaded</div>
+            <div id="statFiles" class="text-2xl font-black accent-text mt-0.5">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Two-Column Workspace -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+
+        <!-- LEFT COLUMN (7 cols): FILE UPLOAD & NOTES -->
+        <div class="lg:col-span-7 space-y-6">
+          <div class="surface-card rounded-3xl p-5 sm:p-7 space-y-5">
+            <div class="flex items-center justify-between gap-2">
+              <div>
+                <h2 class="text-lg sm:text-xl font-extrabold text-main">1. Add Lecture Material</h2>
+                <p class="text-xs sm:text-sm text-sub">Upload slides or paste study notes below</p>
+              </div>
+              <button type="button" onclick="app.clearAllMaterial()" id="clearMaterialBtn"
+                class="hidden px-3 py-1.5 rounded-xl text-xs font-bold surface-subtle text-dim hover:text-main transition">
+                Clear All
+              </button>
+            </div>
+
+            <!-- Drag & Drop Zone -->
+            <div id="dropZone"
+              ondragover="app.handleDragOver(event)"
+              ondragleave="app.handleDragLeave(event)"
+              ondrop="app.handleDrop(event)"
+              onclick="document.getElementById('fileInput').click()"
+              class="cursor-pointer rounded-2xl border-2 border-dashed border-strong p-6 sm:p-8 text-center transition hover:border-strong surface-subtle/60">
+              <input id="fileInput" type="file" multiple accept=".pdf,.pptx,.txt,.md" class="hidden" onchange="app.handleFileSelect(event)" />
+              <div class="w-12 h-12 rounded-2xl accent-soft mx-auto flex items-center justify-center mb-3">
+                <svg class="w-6 h-6 accent-text" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+              </div>
+              <p class="text-sm sm:text-base font-bold text-main">
+                Drag &amp; drop files here, or <span class="accent-text underline">browse your device</span>
+              </p>
+              <p class="text-xs text-dim mt-1">
+                Supports <span class="font-semibold">.PDF</span>, <span class="font-semibold">.PPTX</span>, <span class="font-semibold">.TXT</span>, and <span class="font-semibold">.MD</span> • Multiple files supported
+              </p>
+            </div>
+
+            <!-- Uploaded Files List -->
+            <div id="uploadedFilesList" class="space-y-2.5"></div>
+
+            <!-- Direct Paste Notes Textarea -->
+            <div class="space-y-2 pt-2 border-t border-base">
+              <div class="flex items-center justify-between">
+                <label for="rawNotesInput" class="text-xs font-extrabold uppercase tracking-wider text-dim">
+                  Paste Lecture Notes, Summaries, or Textbook Excerpts
+                </label>
+                <button type="button" onclick="app.openTextPreviewModal()" id="previewTextBtn"
+                  class="hidden text-xs font-bold accent-text hover:underline">
+                  Inspect Extracted Text
+                </button>
+              </div>
+              <textarea id="rawNotesInput" rows="6" oninput="app.updateContentStats()"
+                placeholder="Paste pathology notes, pharmacology tables, anatomy points, or any lecture text here..."
+                class="w-full rounded-2xl surface-subtle p-4 text-sm text-main placeholder:opacity-55 focus:outline-none focus:ring-2 focus:ring-current/30 resize-y"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN (5 cols): QUIZ SETTINGS -->
+        <div class="lg:col-span-5 space-y-6">
+          <div class="surface-card rounded-3xl p-5 sm:p-7 space-y-6">
+            <div>
+              <h2 class="text-lg sm:text-xl font-extrabold text-main">2. Customize Quiz</h2>
+              <p class="text-xs sm:text-sm text-sub">Choose count, difficulty, formats, and mode</p>
+            </div>
+
+            <!-- Question Count Selector -->
+            <div class="space-y-2.5">
+              <label class="block text-xs font-extrabold uppercase tracking-wider text-dim">
+                Number of Questions
+              </label>
+              <div class="grid grid-cols-5 gap-2" id="countButtons">
+                <button type="button" data-count="10" onclick="app.setQuestionCount(10)"
+                  class="count-btn py-2.5 rounded-xl text-sm font-extrabold surface-subtle text-main transition">10</button>
+                <button type="button" data-count="25" onclick="app.setQuestionCount(25)"
+                  class="count-btn py-2.5 rounded-xl text-sm font-extrabold surface-subtle text-main transition">25</button>
+                <button type="button" data-count="50" onclick="app.setQuestionCount(50)"
+                  class="count-btn py-2.5 rounded-xl text-sm font-extrabold surface-subtle text-main transition">50</button>
+                <button type="button" data-count="100" onclick="app.setQuestionCount(100)"
+                  class="count-btn py-2.5 rounded-xl text-sm font-extrabold surface-subtle text-main transition">100</button>
+                <button type="button" data-count="120" onclick="app.setQuestionCount(120)"
+                  class="count-btn py-2.5 rounded-xl text-sm font-extrabold surface-subtle text-main transition">120</button>
+              </div>
+            </div>
+
+            <!-- Difficulty Box Cards -->
+            <div class="space-y-2.5">
+              <label class="block text-xs font-extrabold uppercase tracking-wider text-dim">
+                Difficulty Level
+              </label>
+              <div class="grid grid-cols-2 gap-2.5" id="difficultyBoxes">
+                <button type="button" data-diff="Easy" onclick="app.setDifficulty('Easy')"
+                  class="diff-box p-3.5 rounded-2xl surface-subtle text-left transition">
+                  <div class="font-extrabold text-sm text-main">Easy</div>
+                  <div class="text-xs text-sub mt-0.5">Core definitions &amp; recall</div>
+                </button>
+                <button type="button" data-diff="Medium" onclick="app.setDifficulty('Medium')"
+                  class="diff-box p-3.5 rounded-2xl surface-subtle text-left transition">
+                  <div class="font-extrabold text-sm text-main">Medium</div>
+                  <div class="text-xs text-sub mt-0.5">Concepts &amp; application</div>
+                </button>
+                <button type="button" data-diff="Hard" onclick="app.setDifficulty('Hard')"
+                  class="diff-box p-3.5 rounded-2xl surface-subtle text-left transition">
+                  <div class="font-extrabold text-sm text-main">Hard</div>
+                  <div class="text-xs text-sub mt-0.5">Case &amp; exam synthesis</div>
+                </button>
+                <button type="button" data-diff="Mixed" onclick="app.setDifficulty('Mixed')"
+                  class="diff-box p-3.5 rounded-2xl surface-subtle text-left transition">
+                  <div class="font-extrabold text-sm text-main">Mixed</div>
+                  <div class="text-xs text-sub mt-0.5">Balanced difficulty blend</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Question Types Checklist -->
+            <div class="space-y-2.5">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-extrabold uppercase tracking-wider text-dim">
+                  Question Types Checklist
+                </label>
+                <span class="text-[11px] text-dim">At least 1 required</span>
+              </div>
+              <div class="space-y-2">
+                <label class="flex items-center justify-between p-3 rounded-2xl surface-subtle cursor-pointer select-none transition hover:border-strong">
+                  <div class="flex items-center gap-3">
+                    <input id="typeMcq" type="checkbox" checked onchange="app.onTypeChecklistChange('mcq', this.checked)"
+                      class="w-4 h-4 rounded accent-[var(--accent)] cursor-pointer" />
+                    <div>
+                      <div class="text-sm font-bold text-main">Multiple Choice (MCQs)</div>
+                      <div class="text-xs text-sub">4 options with detailed rationale</div>
+                    </div>
+                  </div>
+                  <span class="text-[11px] font-bold px-2 py-0.5 rounded-md accent-soft">MCQ</span>
+                </label>
+
+                <label class="flex items-center justify-between p-3 rounded-2xl surface-subtle cursor-pointer select-none transition hover:border-strong">
+                  <div class="flex items-center gap-3">
+                    <input id="typeTf" type="checkbox" checked onchange="app.onTypeChecklistChange('tf', this.checked)"
+                      class="w-4 h-4 rounded accent-[var(--accent)] cursor-pointer" />
+                    <div>
+                      <div class="text-sm font-bold text-main">True / False</div>
+                      <div class="text-xs text-sub">Statement verification &amp; nuance checks</div>
+                    </div>
+                  </div>
+                  <span class="text-[11px] font-bold px-2 py-0.5 rounded-md accent-soft">T/F</span>
+                </label>
+
+                <label class="flex items-center justify-between p-3 rounded-2xl surface-subtle cursor-pointer select-none transition hover:border-strong">
+                  <div class="flex items-center gap-3">
+                    <input id="typeWriting" type="checkbox" checked onchange="app.onTypeChecklistChange('writing', this.checked)"
+                      class="w-4 h-4 rounded accent-[var(--accent)] cursor-pointer" />
+                    <div>
+                      <div class="text-sm font-bold text-main">Short Answer / Writing</div>
+                      <div class="text-xs text-sub">Written response + key-point grading check</div>
+                    </div>
+                  </div>
+                  <span class="text-[11px] font-bold px-2 py-0.5 rounded-md accent-soft">Writing</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Quiz Mode Box Cards + Custom Exam Minutes -->
+            <div class="space-y-3">
+              <label class="block text-xs font-extrabold uppercase tracking-wider text-dim">
+                Quiz Mode
+              </label>
+              <div class="grid grid-cols-2 gap-2.5">
+                <button type="button" id="modePracticeBox" onclick="app.setQuizMode('practice')"
+                  class="mode-box p-3.5 rounded-2xl surface-subtle text-left transition">
+                  <div class="font-extrabold text-sm text-main">Practice</div>
+                  <div class="text-xs text-sub mt-0.5">Instant feedback &amp; explanations</div>
+                </button>
+                <button type="button" id="modeExamBox" onclick="app.setQuizMode('exam')"
+                  class="mode-box p-3.5 rounded-2xl surface-subtle text-left transition">
+                  <div class="font-extrabold text-sm text-main">Exam</div>
+                  <div class="text-xs text-sub mt-0.5">Timed test &amp; full review</div>
+                </button>
+              </div>
+
+              <!-- Custom Exam Timer Minutes Input (Shown when Exam Mode is selected) -->
+              <div id="examTimerConfig" class="hidden p-4 rounded-2xl surface-subtle space-y-2 animate-fade-in">
+                <div class="flex items-center justify-between gap-2">
+                  <label for="examMinutesInput" class="text-xs font-extrabold uppercase tracking-wider accent-text">
+                    Exam Duration (Minutes)
+                  </label>
+                  <span id="examFormattedPreview" class="font-mono text-xs font-bold text-main">06:00</span>
+                </div>
+                <input id="examMinutesInput" type="number" min="1" max="300" value="6"
+                  oninput="app.updateExamMinutesPreview()"
+                  placeholder="Type minutes e.g. 6"
+                  class="w-full rounded-xl surface-elevated px-3.5 py-2.5 text-sm font-bold text-main focus:outline-none focus:ring-2 focus:ring-current/40" />
+                <p class="text-[11px] text-dim">Type any whole number of minutes (for example, <span class="font-bold">6</span> sets a 6-minute exam timer).</p>
+              </div>
+            </div>
+
+            <!-- Optional Gemini API Key Input -->
+            <div class="space-y-1.5 pt-2 border-t border-base">
+              <div class="flex items-center justify-between">
+                <label for="geminiApiKeyInput" class="text-xs font-bold text-dim">
+                  Gemini API Key (Optional)
+                </label>
+                <span class="text-[11px] text-dim">Uses smart local generator if blank</span>
+              </div>
+              <input id="geminiApiKeyInput" type="password" oninput="app.saveApiKey()"
+                placeholder="Paste AIza... key for AI-authored questions"
+                class="w-full rounded-xl surface-subtle px-3.5 py-2 text-xs font-mono text-main placeholder:opacity-50 focus:outline-none focus:ring-2 focus:ring-current/30" />
+            </div>
+
+            <!-- Primary Generate CTA -->
+            <button type="button" onclick="app.startGeneration()"
+              class="w-full py-4 px-6 rounded-2xl accent-bg font-extrabold text-base shadow-lg flex items-center justify-center gap-2 cursor-pointer">
+              <span>Generate Questions</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         VIEW 2: LIVE PROGRESS & BATCH GENERATION VIEW
+         ===================================================================== -->
+    <section id="generatingView" class="hidden max-w-3xl mx-auto py-4 sm:py-8 animate-fade-in">
+      <div class="surface-card rounded-3xl p-6 sm:p-10 space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-2xl accent-soft flex items-center justify-center shrink-0">
+              <svg class="w-6 h-6 animate-spin accent-text" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3.5"></circle>
+                <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v3.5a4.5 4.5 0 00-4.5 4.5H4z"></path>
+              </svg>
+            </div>
+            <div>
+              <div class="text-xs font-extrabold uppercase tracking-wider accent-text">Building Question Bank</div>
+              <h2 id="genStatusTitle" class="text-lg sm:text-2xl font-black text-main">
+                Preparing Your Lecture Material...
+              </h2>
+            </div>
+          </div>
+
+          <div class="px-3.5 py-2 rounded-xl surface-subtle font-mono text-xs sm:text-sm font-bold text-main self-start sm:self-center">
+            Elapsed: <span id="genElapsedTimer" class="accent-text">00:00</span>
+          </div>
+        </div>
+
+        <p id="genStatusSubtitle" class="text-sm text-sub">
+          Splitting your material into topic sections and generating questions in batches...
+        </p>
+
+        <!-- Progress Bar Box -->
+        <div class="p-4 sm:p-5 rounded-2xl surface-subtle space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm font-extrabold">
+            <span id="genBatchLabel" class="accent-text">Batch 1</span>
+            <div class="flex items-center gap-3">
+              <span id="genCountLabel" class="text-main">0 / 50 Questions Ready</span>
+              <span id="genPercentBadge" class="px-2.5 py-0.5 rounded-lg accent-soft font-mono">5%</span>
+            </div>
+          </div>
+          <div class="w-full h-5 rounded-full overflow-hidden p-1 border border-base" style="background-color: var(--bg-app);">
+            <div id="genProgressBar" class="h-full rounded-full progress-bar-animated" style="width: 5%"></div>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-dim">
+            <span id="genActivityHint">Initializing generator...</span>
+            <span>Launches automatically when complete</span>
+          </div>
+        </div>
+
+        <!-- Live Question Feed -->
+        <div id="liveSampleBox" class="hidden space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-extrabold uppercase tracking-wider accent-text">Live Generated Questions</span>
+            <span class="text-[11px] text-dim">Latest items</span>
+          </div>
+          <div id="liveStreamList" class="space-y-2 max-h-52 overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-base">
+          <button type="button" onclick="app.cancelGeneration()"
+            class="w-full sm:w-auto px-5 py-3 rounded-xl font-bold text-sm surface-subtle text-sub hover:text-main transition">
+            Cancel
+          </button>
+          <button type="button" id="startEarlyBtn" onclick="app.startQuizEarly()"
+            class="hidden w-full sm:w-auto px-6 py-3 rounded-xl font-extrabold text-sm accent-bg shadow-md flex items-center justify-center gap-2">
+            <span>Start Now (<span id="earlyCount">0</span> Ready)</span>
+            <span>→</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         VIEW 3: INTERACTIVE QUIZ RUNNER
+         ===================================================================== -->
+    <section id="quizView" class="hidden space-y-6 animate-fade-in">
+      <!-- Quiz Top Status Bar -->
+      <div class="surface-card rounded-2xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <span id="quizModeBadge" class="px-3 py-1 rounded-xl text-xs font-extrabold accent-soft">Practice Mode</span>
+          <span id="quizProgressText" class="text-sm font-extrabold text-main">Question 1 of 50</span>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div id="examTimerPill" class="hidden px-3.5 py-1.5 rounded-xl surface-subtle font-mono text-sm font-extrabold text-main flex items-center gap-2">
+            <span>Time Left:</span>
+            <span id="examCountdownDisplay" class="accent-text">06:00</span>
+          </div>
+          <button type="button" onclick="app.finishQuiz()"
+            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold accent-bg cursor-pointer">
+            Finish &amp; Score
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- Question Card (8 cols) -->
+        <div class="lg:col-span-8 surface-card rounded-3xl p-6 sm:p-8 space-y-6">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span id="qTopicTag" class="px-3 py-1 rounded-lg text-xs font-bold surface-subtle text-sub">Topic</span>
+              <span id="qTypeTag" class="px-3 py-1 rounded-lg text-xs font-bold accent-soft">MCQ</span>
+              <span id="qDiffTag" class="px-3 py-1 rounded-lg text-xs font-bold surface-subtle text-dim">Medium</span>
+            </div>
+            <button type="button" onclick="app.toggleFlagCurrent()" id="flagBtn"
+              class="px-3 py-1.5 rounded-xl text-xs font-bold surface-subtle text-sub hover:text-main transition">
+              Flag for Review
+            </button>
+          </div>
+
+          <h2 id="qPromptText" class="text-lg sm:text-xl font-extrabold text-main leading-relaxed"></h2>
+
+          <!-- MCQ / True-False Options Container -->
+          <div id="optionsContainer" class="space-y-3"></div>
+
+          <!-- Short Answer / Writing Container -->
+          <div id="writingContainer" class="hidden space-y-3">
+            <label for="writingAnswerInput" class="block text-xs font-extrabold uppercase tracking-wider text-dim">
+              Your Written Answer
+            </label>
+            <textarea id="writingAnswerInput" rows="5" oninput="app.handleWritingInput(this.value)"
+              placeholder="Write a concise, clear explanation including key terms from your notes..."
+              class="w-full rounded-2xl surface-subtle p-4 text-sm text-main placeholder:opacity-50 focus:outline-none focus:ring-2 focus:ring-current/35"></textarea>
+            <div id="writingRubricBox" class="hidden p-4 rounded-2xl surface-subtle space-y-1.5">
+              <div class="text-xs font-extrabold uppercase tracking-wider accent-text">Model Answer &amp; Key Points</div>
+              <p id="writingModelAnswer" class="text-sm text-main leading-relaxed"></p>
+              <p id="writingKeyPoints" class="text-xs text-sub"></p>
+            </div>
+          </div>
+
+          <!-- Practice Instant Feedback Box -->
+          <div id="instantFeedbackBox" class="hidden p-4 sm:p-5 rounded-2xl surface-subtle space-y-2 animate-fade-in">
+            <div id="feedbackVerdict" class="text-sm font-extrabold"></div>
+            <p id="feedbackExplanation" class="text-sm text-sub leading-relaxed"></p>
+          </div>
+
+          <!-- Previous / Next Controls -->
+          <div class="flex items-center justify-between pt-4 border-t border-base gap-3">
+            <button type="button" onclick="app.prevQuestion()" id="prevQBtn"
+              class="px-5 py-3 rounded-xl text-sm font-bold surface-subtle text-main disabled:opacity-40 transition">
+              ← Previous
+            </button>
+            <button type="button" onclick="app.nextQuestion()" id="nextQBtn"
+              class="px-6 py-3 rounded-xl text-sm font-extrabold accent-bg transition">
+              Next Question →
+            </button>
+          </div>
+        </div>
+
+        <!-- Question Navigator (4 cols) -->
+        <div class="lg:col-span-4 surface-card rounded-3xl p-5 sm:p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-extrabold uppercase tracking-wider text-dim">Question Navigator</h3>
+            <span id="answeredCounter" class="text-xs font-bold accent-text">0 answered</span>
+          </div>
+          <div id="questionNavGrid" class="grid grid-cols-6 sm:grid-cols-8 lg:grid-cols-6 gap-2 max-h-80 overflow-y-auto pr-1"></div>
+          <div class="pt-3 border-t border-base space-y-2">
+            <button type="button" onclick="app.exportQuizHTML()"
+              class="w-full py-2.5 px-4 rounded-xl text-xs font-extrabold surface-subtle text-main hover:border-strong transition">
+              Download Offline Quiz (.HTML)
+            </button>
+            <button type="button" onclick="app.exportQuizJSON()"
+              class="w-full py-2.5 px-4 rounded-xl text-xs font-bold surface-subtle text-sub hover:text-main transition">
+              Export Question Bank (.JSON)
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         VIEW 4: RESULTS & FULL REVIEW
+         ===================================================================== -->
+    <section id="resultsView" class="hidden space-y-6 animate-fade-in">
+      <div class="surface-card rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="space-y-1.5">
+          <span class="text-xs font-extrabold uppercase tracking-wider accent-text">Session Summary</span>
+          <h2 class="text-2xl sm:text-3xl font-black text-main">Quiz Completed</h2>
+          <p id="resultsSubtitle" class="text-sm text-sub"></p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="surface-subtle rounded-2xl px-5 py-3 text-center">
+            <div class="text-xs font-semibold text-dim">Score</div>
+            <div id="resultScorePercent" class="text-2xl font-black accent-text">0%</div>
+          </div>
+          <div class="surface-subtle rounded-2xl px-5 py-3 text-center">
+            <div class="text-xs font-semibold text-dim">Correct / Graded</div>
+            <div id="resultScoreFraction" class="text-2xl font-black text-main">0 / 0</div>
+          </div>
+          <button type="button" onclick="app.retakeCurrentQuiz()"
+            class="px-5 py-3.5 rounded-2xl text-sm font-extrabold accent-bg cursor-pointer">
+            Retake Quiz
+          </button>
+          <button type="button" onclick="app.goHome()"
+            class="px-5 py-3.5 rounded-2xl text-sm font-bold surface-subtle text-main cursor-pointer">
+            New Material
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="app.setReviewFilter('all')" data-review-filter="all"
+            class="review-filter-btn px-4 py-2 rounded-xl text-xs font-extrabold surface-subtle text-main">All</button>
+          <button type="button" onclick="app.setReviewFilter('incorrect')" data-review-filter="incorrect"
+            class="review-filter-btn px-4 py-2 rounded-xl text-xs font-extrabold surface-subtle text-main">Needs Review</button>
+          <button type="button" onclick="app.setReviewFilter('correct')" data-review-filter="correct"
+            class="review-filter-btn px-4 py-2 rounded-xl text-xs font-extrabold surface-subtle text-main">Strong</button>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="app.exportQuizHTML()"
+            class="px-4 py-2 rounded-xl text-xs font-bold surface-subtle text-main">Save .HTML</button>
+          <button type="button" onclick="app.exportQuizJSON()"
+            class="px-4 py-2 rounded-xl text-xs font-bold surface-subtle text-main">Save .JSON</button>
+        </div>
+      </div>
+
+      <!-- Review List -->
+      <div id="reviewList" class="space-y-4"></div>
+    </section>
+  </main>
+
+  <!-- Extracted Text Modal -->
+  <div id="textPreviewModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="surface-card rounded-3xl max-w-3xl w-full max-h-[82vh] flex flex-col overflow-hidden">
+      <div class="p-5 border-b border-base flex items-center justify-between">
+        <h3 class="text-base font-extrabold text-main">Extracted Lecture Text Preview</h3>
+        <button type="button" onclick="app.closeTextPreviewModal()" class="px-3 py-1 rounded-xl text-xs font-bold surface-subtle text-main">Close</button>
+      </div>
+      <pre id="extractedTextModalBody" class="p-5 text-xs text-sub overflow-y-auto whitespace-pre-wrap flex-1"></pre>
+    </div>
+  </div>
+
+  <script>
+    // Configure PDF.js worker if available
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    const app = {
+      // Appearance & Quiz Config State
+      theme: localStorage.getItem('lf_theme') || 'dark',
+      palette: localStorage.getItem('lf_palette') || 'blue',
+      questionCount: 50,
+      difficulty: 'Medium',
+      types: { mcq: true, tf: true, writing: true },
+      quizMode: 'practice',
+      examMinutes: 6,
+      apiKey: localStorage.getItem('lf_gemini_key') || '',
+
+      // Uploaded Files State: [{ id, name, size, words, text }]
+      uploadedFiles: [],
+
+      // Generation & Quiz Runtime State
+      questions: [],
+      userAnswers: {}, // { qIndex: optionIndex for MCQ/TF, or string for writing }
+      flagged: new Set(),
+      currentIndex: 0,
+      isGenerating: false,
+      abortGeneration: false,
+      genTimerInterval: null,
+      genCreepInterval: null,
+      genStartTime: 0,
+      currentDisplayPct: 5,
+      examTimerInterval: null,
+      secondsRemaining: 360,
+      reviewFilter: 'all',
+
+      init() {
+        this.applyThemeAndPalette();
+        this.setQuestionCount(this.questionCount);
+        this.setDifficulty(this.difficulty);
+        this.setQuizMode(this.quizMode);
+        document.getElementById('examMinutesInput').value = this.examMinutes;
+        this.updateExamMinutesPreview();
+        document.getElementById('geminiApiKeyInput').value = this.apiKey;
+        this.syncTypeCheckboxes();
+        this.updateContentStats();
+      },
+
+      // -----------------------------------------------------------------------
+      // 1. FULL-CANVAS LIGHT/DARK + RED/BLUE/GREEN THEME SWITCHER
+      // -----------------------------------------------------------------------
+      setPalette(paletteName) {
+        if (!['red', 'blue', 'green'].includes(paletteName)) return;
+        this.palette = paletteName;
+        localStorage.setItem('lf_palette', paletteName);
+        this.applyThemeAndPalette();
+      },
+
+      toggleTheme() {
+        this.theme = this.theme === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('lf_theme', this.theme);
+        this.applyThemeAndPalette();
+      },
+
+      applyThemeAndPalette() {
+        document.documentElement.setAttribute('data-theme', this.theme);
+        document.documentElement.setAttribute('data-palette', this.palette);
+
+        const isDark = this.theme === 'dark';
+        document.getElementById('sunIcon').classList.toggle('hidden', !isDark);
+        document.getElementById('moonIcon').classList.toggle('hidden', isDark);
+        document.getElementById('themeLabel').textContent = isDark ? 'Dark' : 'Light';
+
+        document.querySelectorAll('[data-palette-btn]').forEach(btn => {
+          const active = btn.getAttribute('data-palette-btn') === this.palette;
+          btn.classList.toggle('accent-bg', active);
+          btn.classList.toggle('text-main', !active);
+        });
+      },
+
+      saveApiKey() {
+        this.apiKey = document.getElementById('geminiApiKeyInput').value.trim();
+        localStorage.setItem('lf_gemini_key', this.apiKey);
+      },
+
+      // -----------------------------------------------------------------------
+      // 2. FILE PARSING (.PDF, .PPTX, .TXT, .MD) & NOTES INPUT
+      // -----------------------------------------------------------------------
+      handleDragOver(e) {
+        e.preventDefault();
+        document.getElementById('dropZone').classList.add('dropzone-active');
+      },
+
+      handleDragLeave(e) {
+        e.preventDefault();
+        document.getElementById('dropZone').classList.remove('dropzone-active');
+      },
+
+      async handleDrop(e) {
+        e.preventDefault();
+        document.getElementById('dropZone').classList.remove('dropzone-active');
+        const files = Array.from(e.dataTransfer?.files || []);
+        if (files.length) await this.processFiles(files);
+      },
+
+      async handleFileSelect(e) {
+        const files = Array.from(e.target?.files || []);
+        if (files.length) await this.processFiles(files);
+        e.target.value = '';
+      },
+
+      async processFiles(files) {
+        for (const file of files) {
+          const lower = file.name.toLowerCase();
+          try {
+            let extractedText = '';
+            if (lower.endsWith('.txt') || lower.endsWith('.md')) {
+              extractedText = await file.text();
+            } else if (lower.endsWith('.pdf')) {
+              extractedText = await this.extractPdfText(file);
+            } else if (lower.endsWith('.pptx')) {
+              extractedText = await this.extractPptxText(file);
+            } else {
+              this.showToast(`Unsupported format for "${file.name}". Use .pdf, .pptx, .txt, or .md.`, 'error');
+              continue;
+            }
+
+            const cleaned = this.cleanExtractedText(extractedText);
+            if (!cleaned.trim()) {
+              this.showToast(`No readable text found in "${file.name}".`, 'error');
+              continue;
+            }
+
+            const words = this.countWords(cleaned);
+            this.uploadedFiles.push({
+              id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+              name: file.name,
+              words,
+              text: cleaned
+            });
+            this.showToast(`Loaded "${file.name}" (${words.toLocaleString()} words).`, 'success');
+          } catch (err) {
+            console.error('File parse error:', err);
+            this.showToast(`Could not parse "${file.name}". You can paste its text directly instead.`, 'error');
+          }
+        }
+        this.renderUploadedFiles();
+        this.updateContentStats();
+      },
+
+      async extractPdfText(file) {
+        if (!window.pdfjsLib) throw new Error('PDF.js unavailable');
+        const buffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+        let pages = [];
+        for (let p = 1; p <= pdf.numPages; p++) {
+          const page = await pdf.getPage(p);
+          const content = await page.getTextContent();
+          const text = content.items.map(item => item.str).join(' ');
+          pages.push(`--- Page ${p} ---\n${text}`);
+        }
+        return pages.join('\n\n');
+      },
+
+      async extractPptxText(file) {
+        if (!window.JSZip) throw new Error('JSZip unavailable');
+        const zip = await JSZip.loadAsync(await file.arrayBuffer());
+        const slidePaths = Object.keys(zip.files)
+          .filter(name => /^ppt\/slides\/slide\d+\.xml$/i.test(name))
+          .sort((a, b) => {
+            const numA = parseInt(a.match(/slide(\d+)/i)?.[1] || '0', 10);
+            const numB = parseInt(b.match(/slide(\d+)/i)?.[1] || '0', 10);
+            return numA - numB;
+          });
+
+        const slidesText = [];
+        for (let i = 0; i < slidePaths.length; i++) {
+          const xmlStr = await zip.files[slidePaths[i]].async('string');
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(xmlStr, 'application/xml');
+          const textNodes = Array.from(xmlDoc.getElementsByTagNameNS('*', 't'));
+          const slideLine = textNodes.map(n => n.textContent || '').join(' ').trim();
+          if (slideLine) {
+            slidesText.push(`--- Slide ${i + 1} ---\n${slideLine}`);
+          }
+        }
+        return slidesText.join('\n\n');
+      },
+
+      cleanExtractedText(str) {
+        return String(str || '')
+          .replace(/\r\n/g, '\n')
+          .replace(/[ \t]+/g, ' ')
+          .replace(/\n{3,}/g, '\n\n')
+          .trim();
+      },
+
+      countWords(str) {
+        const trimmed = String(str || '').trim();
+        if (!trimmed) return 0;
+        return trimmed.split(/\s+/).length;
+      },
+
+      renderUploadedFiles() {
+        const container = document.getElementById('uploadedFilesList');
+        if (!this.uploadedFiles.length) {
+          container.innerHTML = '';
+          return;
+        }
+        container.innerHTML = this.uploadedFiles.map(file => `
+          <div class="p-3 rounded-2xl surface-subtle flex items-center justify-between gap-3 animate-fade-in">
+            <div class="min-w-0">
+              <div class="text-sm font-bold text-main truncate">${this.escapeHTML(file.name)}</div>
+              <div class="text-xs text-dim">${file.words.toLocaleString()} words extracted</div>
+            </div>
+            <button type="button" onclick="app.removeFile('${file.id}')"
+              class="px-3 py-1.5 rounded-xl text-xs font-bold surface-elevated text-sub hover:text-main shrink-0">
+              Remove
+            </button>
+          </div>
+        `).join('');
+      },
+
+      removeFile(id) {
+        this.uploadedFiles = this.uploadedFiles.filter(f => f.id !== id);
+        this.renderUploadedFiles();
+        this.updateContentStats();
+      },
+
+      clearAllMaterial() {
+        this.uploadedFiles = [];
+        document.getElementById('rawNotesInput').value = '';
+        this.renderUploadedFiles();
+        this.updateContentStats();
+        this.showToast('Cleared all uploaded files and notes.', 'info');
+      },
+
+      getCombinedMaterial() {
+        const pasted = this.cleanExtractedText(document.getElementById('rawNotesInput').value);
+        const fileParts = this.uploadedFiles.map(f => `[File: ${f.name}]\n${f.text}`);
+        return [...fileParts, pasted].filter(Boolean).join('\n\n');
+      },
+
+      updateContentStats() {
+        const combined = this.getCombinedMaterial();
+        const words = this.countWords(combined);
+        document.getElementById('statWords').textContent = words.toLocaleString();
+        document.getElementById('statFiles').textContent = String(this.uploadedFiles.length);
+
+        const hasContent = words > 0;
+        document.getElementById('clearMaterialBtn').classList.toggle('hidden', !hasContent);
+        document.getElementById('previewTextBtn').classList.toggle('hidden', !hasContent);
+      },
+
+      openTextPreviewModal() {
+        document.getElementById('extractedTextModalBody').textContent = this.getCombinedMaterial();
+        document.getElementById('textPreviewModal').classList.remove('hidden');
+      },
+
+      closeTextPreviewModal() {
+        document.getElementById('textPreviewModal').classList.add('hidden');
+      },
+
+      // -----------------------------------------------------------------------
+      // 3. COUNT, DIFFICULTY BOXES, QUESTION CHECKLIST & EXAM MODE TIMER
+      // -----------------------------------------------------------------------
+      setQuestionCount(count) {
+        this.questionCount = count;
+        document.querySelectorAll('.count-btn').forEach(btn => {
+          const active = Number(btn.getAttribute('data-count')) === count;
+          btn.classList.toggle('accent-bg', active);
+          btn.classList.toggle('surface-subtle', !active);
+          btn.classList.toggle('text-main', !active);
+        });
+      },
+
+      setDifficulty(diff) {
+        if (!['Easy', 'Medium', 'Hard', 'Mixed'].includes(diff)) return;
+        this.difficulty = diff;
+        document.querySelectorAll('.diff-box').forEach(box => {
+          const active = box.getAttribute('data-diff') === diff;
+          box.classList.toggle('box-selected', active);
+        });
+      },
+
+      onTypeChecklistChange(key, checked) {
+        this.types[key] = checked;
+        const anyChecked = Object.values(this.types).some(Boolean);
+        if (!anyChecked) {
+          this.types[key] = true;
+          this.syncTypeCheckboxes();
+          this.showToast('Keep at least one question format selected.', 'info');
+        }
+      },
+
+      syncTypeCheckboxes() {
+        document.getElementById('typeMcq').checked = Boolean(this.types.mcq);
+        document.getElementById('typeTf').checked = Boolean(this.types.tf);
+        document.getElementById('typeWriting').checked = Boolean(this.types.writing);
+      },
+
+      setQuizMode(mode) {
+        if (!['practice', 'exam'].includes(mode)) return;
+        this.quizMode = mode;
+        document.getElementById('modePracticeBox').classList.toggle('box-selected', mode === 'practice');
+        document.getElementById('modeExamBox').classList.toggle('box-selected', mode === 'exam');
+        document.getElementById('examTimerConfig').classList.toggle('hidden', mode !== 'exam');
+        this.updateExamMinutesPreview();
+      },
+
+      updateExamMinutesPreview() {
+        const rawVal = parseInt(document.getElementById('examMinutesInput').value, 10);
+        const mins = Number.isFinite(rawVal) && rawVal > 0 ? Math.min(rawVal, 600) : 6;
+        this.examMinutes = mins;
+        const mm = String(mins).padStart(2, '0');
+        document.getElementById('examFormattedPreview').textContent = `${mm}:00`;
+      },
+
+      // -----------------------------------------------------------------------
+      // 4. BATCH GENERATION WITH LIVE PROGRESS BAR & TIMER
+      // -----------------------------------------------------------------------
+      async startGeneration() {
+        this.updateExamMinutesPreview();
+        const material = this.getCombinedMaterial();
+        if (this.countWords(material) < 15) {
+          this.showToast('Please upload at least one file or paste a few sentences of study notes first.', 'error');
+          return;
+        }
+
+        const activeTypes = Object.entries(this.types)
+          .filter(([, enabled]) => enabled)
+          .map(([key]) => key);
+        if (!activeTypes.length) {
+          activeTypes.push('mcq');
+        }
+
+        this.isGenerating = true;
+        this.abortGeneration = false;
+        this.questions = [];
+        this.userAnswers = {};
+        this.flagged = new Set();
+        this.currentIndex = 0;
+
+        this.switchView('generatingView');
+        document.getElementById('startEarlyBtn').classList.add('hidden');
+        document.getElementById('liveSampleBox').classList.add('hidden');
+        document.getElementById('liveStreamList').innerHTML = '';
+        document.getElementById('genCountLabel').textContent = `0 / ${this.questionCount} Questions Ready`;
+
+        this.startGenerationTimers();
+        this.updateGenerationProgress(5, 'Analyzing Your Study Material...', 'Segmenting text into topic chunks...');
+
+        const batchSize = this.questionCount <= 25 ? this.questionCount : 20;
+        const totalBatches = Math.ceil(this.questionCount / batchSize);
+        const chunks = this.splitTextIntoChunks(material, totalBatches);
+
+        for (let b = 0; b < totalBatches; b++) {
+          if (this.abortGeneration) return;
+
+          const remaining = this.questionCount - this.questions.length;
+          const countForBatch = Math.min(batchSize, remaining);
+          if (countForBatch <= 0) break;
+
+          const startQ = this.questions.length + 1;
+          const endQ = this.questions.length + countForBatch;
+          const basePct = Math.max(8, Math.round((this.questions.length / this.questionCount) * 100));
+          const maxCreepPct = Math.min(96, Math.round((endQ / this.questionCount) * 100) - 2);
+
+          document.getElementById('genBatchLabel').textContent = `Batch ${b + 1} of ${totalBatches}`;
+          document.getElementById('genStatusTitle').textContent = `Generating Batch ${b + 1} of ${totalBatches} (Q${startQ}–Q${endQ})`;
+          document.getElementById('genStatusSubtitle').textContent = `Creating ${countForBatch} ${this.difficulty.toLowerCase()} questions from section ${b + 1}...`;
+          this.updateGenerationProgress(basePct, null, `Processing section ${b + 1} for ${countForBatch} questions...`);
+          this.startBatchCreep(basePct, Math.max(basePct + 2, maxCreepPct));
+
+          try {
+            const batchItems = await this.generateBatch({
+              chunk: chunks[b % chunks.length],
+              count: countForBatch,
+              difficulty: this.difficulty,
+              allowedTypes: activeTypes,
+              batchNum: b + 1
+            });
+
+            this.stopBatchCreep();
+            if (this.abortGeneration) return;
+
+            this.questions.push(...batchItems);
+            const readyPct = Math.min(100, Math.round((this.questions.length / this.questionCount) * 100));
+            document.getElementById('genCountLabel').textContent = `${this.questions.length} / ${this.questionCount} Questions Ready`;
+            this.updateGenerationProgress(readyPct, null, `Batch ${b + 1} finished (${this.questions.length} total ready)`);
+
+            this.renderLiveFeed();
+            document.getElementById('earlyCount').textContent = String(this.questions.length);
+            document.getElementById('startEarlyBtn').classList.remove('hidden');
+          } catch (err) {
+            this.stopBatchCreep();
+            console.error('Batch error:', err);
+            if (!this.questions.length) {
+              this.stopGenerationTimers();
+              this.switchView('setupView');
+              this.isGenerating = false;
+              this.showToast('Could not generate questions from this input. Try adding more text.', 'error');
+              return;
+            }
+            break;
+          }
+        }
+
+        this.stopGenerationTimers();
+        if (!this.abortGeneration && this.questions.length > 0) {
+          this.updateGenerationProgress(100, 'Question Bank Ready!', 'Opening your quiz...');
+          this.isGenerating = false;
+          setTimeout(() => this.launchQuiz(), 400);
+        }
+      },
+
+      startGenerationTimers() {
+        this.stopGenerationTimers();
+        this.genStartTime = Date.now();
+        document.getElementById('genElapsedTimer').textContent = '00:00';
+        this.genTimerInterval = setInterval(() => {
+          const sec = Math.floor((Date.now() - this.genStartTime) / 1000);
+          const m = String(Math.floor(sec / 60)).padStart(2, '0');
+          const s = String(sec % 60).padStart(2, '0');
+          document.getElementById('genElapsedTimer').textContent = `${m}:${s}`;
+        }, 500);
+      },
+
+      stopGenerationTimers() {
+        if (this.genTimerInterval) clearInterval(this.genTimerInterval);
+        this.stopBatchCreep();
+      },
+
+      startBatchCreep(startPct, targetPct) {
+        this.stopBatchCreep();
+        let cur = Math.max(this.currentDisplayPct, startPct);
+        this.genCreepInterval = setInterval(() => {
+          if (cur < targetPct) {
+            cur += 1;
+            this.updateGenerationProgress(cur, null, null);
+          }
+        }, 650);
+      },
+
+      stopBatchCreep() {
+        if (this.genCreepInterval) clearInterval(this.genCreepInterval);
+      },
+
+      updateGenerationProgress(pct, titleText, hintText) {
+        this.currentDisplayPct = pct;
+        document.getElementById('genProgressBar').style.width = `${pct}%`;
+        document.getElementById('genPercentBadge').textContent = `${pct}%`;
+        if (titleText) document.getElementById('genStatusTitle').textContent = titleText;
+        if (hintText) document.getElementById('genActivityHint').textContent = hintText;
+      },
+
+      renderLiveFeed() {
+        document.getElementById('liveSampleBox').classList.remove('hidden');
+        const list = document.getElementById('liveStreamList');
+        const latest = this.questions.slice(-3).reverse();
+        list.innerHTML = latest.map((q, idx) => {
+          const num = this.questions.length - idx;
+          return `
+            <div class="p-3 rounded-xl surface-subtle flex items-start justify-between gap-3 animate-fade-in">
+              <div class="min-w-0">
+                <div class="text-[11px] font-bold accent-text">Q${num} • ${this.escapeHTML(q.topic)} • ${this.escapeHTML(q.typeLabel)}</div>
+                <p class="text-xs sm:text-sm font-semibold text-main truncate">${this.escapeHTML(q.question)}</p>
+              </div>
+              <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-md accent-soft shrink-0">${this.escapeHTML(q.difficulty)}</span>
+            </div>
+          `;
+        }).join('');
+      },
+
+      startQuizEarly() {
+        if (!this.questions.length) return;
+        this.abortGeneration = true;
+        this.isGenerating = false;
+        this.stopGenerationTimers();
+        this.launchQuiz();
+      },
+
+      cancelGeneration() {
+        this.abortGeneration = true;
+        this.isGenerating = false;
+        this.stopGenerationTimers();
+        this.switchView('setupView');
+      },
+
+      splitTextIntoChunks(text, numChunks) {
+        const paragraphs = text.split(/\n+/).map(p => p.trim()).filter(p => p.length > 10);
+        if (!paragraphs.length) return [text];
+        const size = Math.max(1, Math.ceil(paragraphs.length / numChunks));
+        const chunks = [];
+        for (let i = 0; i < paragraphs.length; i += size) {
+          chunks.push(paragraphs.slice(i, i + size).join('\n'));
+        }
+        return chunks.length ? chunks : [text];
+      },
+
+      async generateBatch({ chunk, count, difficulty, allowedTypes, batchNum }) {
+        if (this.apiKey) {
+          try {
+            return await this.fetchGeminiBatch({ chunk, count, difficulty, allowedTypes, batchNum });
+          } catch (e) {
+            console.warn('Gemini fallback triggered:', e);
+          }
+        }
+        // Small realistic async pause so the progress bar visibly animates
+        await new Promise(resolve => setTimeout(resolve, 450));
+        return this.buildLocalBatch({ chunk, count, difficulty, allowedTypes, batchNum });
+      },
+
+      async fetchGeminiBatch({ chunk, count, difficulty, allowedTypes, batchNum }) {
+        const prompt = `Generate exactly ${count} study questions from the lecture material below.
+Allowed formats: ${allowedTypes.join(', ')} (where "mcq" = 4 options with correctIndex 0..3, "tf" = ["True", "False"] with correctIndex 0 or 1, "writing" = short answer with modelAnswer and keyPoints array).
+Difficulty setting: ${difficulty}.
+Return ONLY a valid JSON array of objects with fields:
+{
+  "type": "mcq" | "tf" | "writing",
+  "topic": "short topic label",
+  "difficulty": "Easy" | "Medium" | "Hard",
+  "question": "question prompt",
+  "options": ["..."],
+  "correctIndex": 0,
+  "modelAnswer": "...",
+  "keyPoints": ["..."],
+  "explanation": "clear explanation based on the material"
+}
+Material (Batch ${batchNum}):
+${chunk.slice(0, 12000)}`;
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(this.apiKey)}`;
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: 'application/json', temperature: 0.7 }
+          })
+        });
+
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+        const parsed = JSON.parse(rawText);
+        if (!Array.isArray(parsed) || !parsed.length) throw new Error('Invalid JSON array');
+
+        return parsed.slice(0, count).map((item, i) => this.normalizeQuestion(item, allowedTypes, difficulty, batchNum, i));
+      },
+
+      buildLocalBatch({ chunk, count, difficulty, allowedTypes, batchNum }) {
+        const sentences = chunk
+          .split(/(?<=[.!?])\s+|\n+/)
+          .map(s => s.replace(/^[-•*]\s*/, '').trim())
+          .filter(s => s.length >= 25);
+
+        const pool = sentences.length ? sentences : [chunk.trim() || 'Core lecture concept and clinical or theoretical application.'];
+        const results = [];
+
+        for (let i = 0; i < count; i++) {
+          const baseIndex = (batchNum * 17 + i * 7) % pool.length;
+          const stmt = pool[baseIndex];
+          const altStmt = pool[(baseIndex + 1) % pool.length];
+          const secondAlt = pool[(baseIndex + 2) % pool.length];
+          const thirdAlt = pool[(baseIndex + 3) % pool.length];
+
+          const words = stmt.split(/\s+/).filter(w => w.replace(/[^a-zA-Z0-9-]/g, '').length >= 5);
+          const keyTerm = (words[Math.floor(words.length / 2)] || words[0] || 'this concept').replace(/[^a-zA-Z0-9-]/g, '');
+          const shortExcerpt = stmt.slice(0, 110) + (stmt.length > 110 ? '...' : '');
+          const topic = `Section ${batchNum} • ${keyTerm}`;
+          const diffLabel = difficulty === 'Mixed'
+            ? ['Easy', 'Medium', 'Hard'][(i + batchNum) % 3]
+            : difficulty;
+
+          const type = allowedTypes[(i + batchNum) % allowedTypes.length];
+
+          if (type === 'tf') {
+            const isTrue = (i + batchNum) % 2 === 0;
+            results.push({
+              id: `q_${Date.now()}_${batchNum}_${i}`,
+              type: 'tf',
+              typeLabel: 'True / False',
+              topic,
+              difficulty: diffLabel,
+              question: isTrue
+                ? `True or False: According to your study notes, "${shortExcerpt}"`
+                : `True or False: "${shortExcerpt}" applies exclusively to unrelated systems and never to ${keyTerm}.`,
+              options: ['True', 'False'],
+              correctIndex: isTrue ? 0 : 1,
+              explanation: isTrue
+                ? `This statement aligns directly with your material regarding ${keyTerm}.`
+                : `This statement distorts the relationship in your notes concerning ${keyTerm}.`
+            });
+          } else if (type === 'writing') {
+            results.push({
+              id: `q_${Date.now()}_${batchNum}_${i}`,
+              type: 'writing',
+              typeLabel: 'Short Answer / Writing',
+              topic,
+              difficulty: diffLabel,
+              question: `Short Answer (${diffLabel}): Explain the role or significance of "${keyTerm}" based on your lecture material.`,
+              options: [],
+              correctIndex: null,
+              modelAnswer: stmt,
+              keyPoints: [keyTerm, ...words.slice(0, 3).map(w => w.replace(/[^a-zA-Z0-9-]/g, '')).filter(Boolean)],
+              explanation: `Key reference from your material: ${stmt}`
+            });
+          } else {
+            const distractors = [
+              `It contradicts the core principle described for ${keyTerm} in your notes.`,
+              `It only occurs when "${altStmt.slice(0, 55)}..." is reversed.`,
+              `It replaces ${keyTerm} with "${thirdAlt.slice(0, 50)}..." without evidence.`
+            ];
+            const correctOption = `It directly reflects: "${shortExcerpt}"`;
+            const options = [correctOption, ...distractors];
+            // Deterministic shuffle per question index
+            const correctIndex = (i + batchNum) % 4;
+            const temp = options[0];
+            options[0] = options[correctIndex];
+            options[correctIndex] = temp;
+
+            results.push({
+              id: `q_${Date.now()}_${batchNum}_${i}`,
+              type: 'mcq',
+              typeLabel: 'Multiple Choice',
+              topic,
+              difficulty: diffLabel,
+              question: `Which statement best matches your study material on ${keyTerm}?`,
+              options,
+              correctIndex,
+              explanation: `Your material states: "${stmt}"`
+            });
+          }
+        }
+        return results;
+      },
+
+      normalizeQuestion(raw, allowedTypes, fallbackDiff, batchNum, idx) {
+        const type = allowedTypes.includes(raw.type) ? raw.type : allowedTypes[0];
+        const diff = ['Easy', 'Medium', 'Hard'].includes(raw.difficulty)
+          ? raw.difficulty
+          : (fallbackDiff === 'Mixed' ? ['Easy', 'Medium', 'Hard'][idx % 3] : fallbackDiff);
+
+        if (type === 'tf') {
+          return {
+            id: `q_${Date.now()}_${batchNum}_${idx}`,
+            type: 'tf',
+            typeLabel: 'True / False',
+            topic: raw.topic || `Section ${batchNum}`,
+            difficulty: diff,
+            question: raw.question || 'True or False statement.',
+            options: ['True', 'False'],
+            correctIndex: raw.correctIndex === 1 ? 1 : 0,
+            explanation: raw.explanation || 'Review the corresponding lecture note.'
+          };
+        }
+
+        if (type === 'writing') {
+          return {
+            id: `q_${Date.now()}_${batchNum}_${idx}`,
+            type: 'writing',
+            typeLabel: 'Short Answer / Writing',
+            topic: raw.topic || `Section ${batchNum}`,
+            difficulty: diff,
+            question: raw.question || 'Provide a short written explanation.',
+            options: [],
+            correctIndex: null,
+            modelAnswer: raw.modelAnswer || raw.explanation || 'Refer to the lecture summary.',
+            keyPoints: Array.isArray(raw.keyPoints) ? raw.keyPoints : [],
+            explanation: raw.explanation || raw.modelAnswer || ''
+          };
+        }
+
+        const opts = Array.isArray(raw.options) && raw.options.length >= 2
+          ? raw.options.slice(0, 4)
+          : ['Option A', 'Option B', 'Option C', 'Option D'];
+        const cIdx = typeof raw.correctIndex === 'number' && raw.correctIndex >= 0 && raw.correctIndex < opts.length
+          ? raw.correctIndex
+          : 0;
+
+        return {
+          id: `q_${Date.now()}_${batchNum}_${idx}`,
+          type: 'mcq',
+          typeLabel: 'Multiple Choice',
+          topic: raw.topic || `Section ${batchNum}`,
+          difficulty: diff,
+          question: raw.question || 'Select the best answer.',
+          options: opts,
+          correctIndex: cIdx,
+          explanation: raw.explanation || ''
+        };
+      },
+
+      // -----------------------------------------------------------------------
+      // 5. QUIZ RUNNER, EXAM COUNTDOWN TIMER & WRITING SELF-CHECK
+      // -----------------------------------------------------------------------
+      launchQuiz() {
+        this.userAnswers = {};
+        this.flagged = new Set();
+        this.currentIndex = 0;
+        this.switchView('quizView');
+
+        const isExam = this.quizMode === 'exam';
+        document.getElementById('quizModeBadge').textContent = isExam ? 'Exam Mode' : 'Practice Mode';
+        document.getElementById('examTimerPill').classList.toggle('hidden', !isExam);
+
+        if (this.examTimerInterval) clearInterval(this.examTimerInterval);
+        if (isExam) {
+          this.secondsRemaining = this.examMinutes * 60;
+          this.renderExamCountdown();
+          this.examTimerInterval = setInterval(() => {
+            this.secondsRemaining -= 1;
+            this.renderExamCountdown();
+            if (this.secondsRemaining <= 0) {
+              clearInterval(this.examTimerInterval);
+              this.showToast('Time is up! Submitting your exam.', 'info');
+              this.finishQuiz();
+            }
+          }, 1000);
+        }
+
+        this.renderQuestion();
+        this.renderNavigator();
+      },
+
+      renderExamCountdown() {
+        const total = Math.max(0, this.secondsRemaining);
+        const mins = String(Math.floor(total / 60)).padStart(2, '0');
+        const secs = String(total % 60).padStart(2, '0');
+        document.getElementById('examCountdownDisplay').textContent = `${mins}:${secs}`;
+      },
+
+      renderQuestion() {
+        const q = this.questions[this.currentIndex];
+        if (!q) return;
+
+        document.getElementById('quizProgressText').textContent = `Question ${this.currentIndex + 1} of ${this.questions.length}`;
+        document.getElementById('qTopicTag').textContent = q.topic;
+        document.getElementById('qTypeTag').textContent = q.typeLabel;
+        document.getElementById('qDiffTag').textContent = q.difficulty;
+        document.getElementById('qPromptText').textContent = q.question;
+
+        const isFlagged = this.flagged.has(this.currentIndex);
+        document.getElementById('flagBtn').classList.toggle('box-selected', isFlagged);
+        document.getElementById('flagBtn').textContent = isFlagged ? 'Flagged ★' : 'Flag for Review';
+
+        document.getElementById('prevQBtn').disabled = this.currentIndex === 0;
+        document.getElementById('nextQBtn').textContent =
+          this.currentIndex === this.questions.length - 1 ? 'Finish Quiz →' : 'Next Question →';
+
+        const optionsContainer = document.getElementById('optionsContainer');
+        const writingContainer = document.getElementById('writingContainer');
+        const feedbackBox = document.getElementById('instantFeedbackBox');
+        feedbackBox.classList.add('hidden');
+
+        const existingAnswer = this.userAnswers[this.currentIndex];
+
+        if (q.type === 'writing') {
+          optionsContainer.classList.add('hidden');
+          writingContainer.classList.remove('hidden');
+          const ta = document.getElementById('writingAnswerInput');
+          ta.value = typeof existingAnswer === 'string' ? existingAnswer : '';
+
+          const showRubric = this.quizMode === 'practice' && typeof existingAnswer === 'string' && existingAnswer.trim().length > 0;
+          document.getElementById('writingRubricBox').classList.toggle('hidden', !showRubric);
+          document.getElementById('writingModelAnswer').textContent = q.modelAnswer || '';
+          document.getElementById('writingKeyPoints').textContent = q.keyPoints?.length
+            ? `Key terms to include: ${q.keyPoints.join(', ')}`
+            : '';
+        } else {
+          writingContainer.classList.add('hidden');
+          optionsContainer.classList.remove('hidden');
+
+          optionsContainer.innerHTML = q.options.map((opt, idx) => {
+            const isSelected = existingAnswer === idx;
+            const letter = String.fromCharCode(65 + idx);
+            let extraClass = 'surface-subtle hover:border-strong';
+
+            if (this.quizMode === 'practice' && typeof existingAnswer === 'number') {
+              if (idx === q.correctIndex) {
+                extraClass = 'border-emerald-500 bg-emerald-500/15 text-main';
+              } else if (isSelected && idx !== q.correctIndex) {
+                extraClass = 'border-rose-500 bg-rose-500/15 text-main';
+              }
+            } else if (isSelected) {
+              extraClass = 'box-selected text-main';
+            }
+
+            return `
+              <button type="button" onclick="app.selectOption(${idx})"
+                class="w-full p-4 rounded-2xl border text-left flex items-center gap-3.5 transition ${extraClass}">
+                <span class="w-8 h-8 rounded-xl accent-soft font-extrabold text-xs flex items-center justify-center shrink-0">${letter}</span>
+                <span class="text-sm font-semibold text-main leading-snug">${this.escapeHTML(opt)}</span>
+              </button>
+            `;
+          }).join('');
+
+          if (this.quizMode === 'practice' && typeof existingAnswer === 'number') {
+            const correct = existingAnswer === q.correctIndex;
+            feedbackBox.classList.remove('hidden');
+            document.getElementById('feedbackVerdict').textContent = correct ? 'Correct!' : `Incorrect — Correct answer: ${q.options[q.correctIndex]}`;
+            document.getElementById('feedbackVerdict').className = `text-sm font-extrabold ${correct ? 'text-emerald-500' : 'text-rose-500'}`;
+            document.getElementById('feedbackExplanation').textContent = q.explanation;
+          }
+        }
+      },
+
+      selectOption(optionIdx) {
+        this.userAnswers[this.currentIndex] = optionIdx;
+        this.renderQuestion();
+        this.renderNavigator();
+      },
+
+      handleWritingInput(val) {
+        if (val.trim()) {
+          this.userAnswers[this.currentIndex] = val;
+        } else {
+          delete this.userAnswers[this.currentIndex];
+        }
+        this.renderNavigator();
+        if (this.quizMode === 'practice' && val.trim().length > 0) {
+          const q = this.questions[this.currentIndex];
+          document.getElementById('writingRubricBox').classList.remove('hidden');
+          document.getElementById('writingModelAnswer').textContent = q.modelAnswer || '';
+          document.getElementById('writingKeyPoints').textContent = q.keyPoints?.length
+            ? `Key terms to include: ${q.keyPoints.join(', ')}`
+            : '';
+        }
+      },
+
+      toggleFlagCurrent() {
+        if (this.flagged.has(this.currentIndex)) {
+          this.flagged.delete(this.currentIndex);
+        } else {
+          this.flagged.add(this.currentIndex);
+        }
+        this.renderQuestion();
+        this.renderNavigator();
+      },
+
+      prevQuestion() {
+        if (this.currentIndex > 0) {
+          this.currentIndex -= 1;
+          this.renderQuestion();
+          this.renderNavigator();
+        }
+      },
+
+      nextQuestion() {
+        if (this.currentIndex < this.questions.length - 1) {
+          this.currentIndex += 1;
+          this.renderQuestion();
+          this.renderNavigator();
+        } else {
+          this.finishQuiz();
+        }
+      },
+
+      jumpToQuestion(index) {
+        this.currentIndex = index;
+        this.renderQuestion();
+        this.renderNavigator();
+      },
+
+      renderNavigator() {
+        const grid = document.getElementById('questionNavGrid');
+        let answeredCount = 0;
+
+        grid.innerHTML = this.questions.map((q, idx) => {
+          const ans = this.userAnswers[idx];
+          const isAnswered = q.type === 'writing'
+            ? (typeof ans === 'string' && ans.trim().length > 0)
+            : (typeof ans === 'number');
+          if (isAnswered) answeredCount += 1;
+
+          const isCurrent = idx === this.currentIndex;
+          const isFlagged = this.flagged.has(idx);
+          let cls = 'surface-subtle text-sub';
+          if (isCurrent) cls = 'accent-bg font-black';
+          else if (isAnswered) cls = 'accent-soft font-extrabold';
+
+          return `
+            <button type="button" onclick="app.jumpToQuestion(${idx})"
+              class="h-9 rounded-xl text-xs font-bold relative transition ${cls}">
+              ${idx + 1}
+              ${isFlagged ? '<span class="absolute top-0.5 right-1 text-[9px] accent-text">★</span>' : ''}
+            </button>
+          `;
+        }).join('');
+
+        document.getElementById('answeredCounter').textContent = `${answeredCount} / ${this.questions.length} answered`;
+      },
+
+      // -----------------------------------------------------------------------
+      // 6. RESULTS, REVIEW & OFFLINE EXPORT
+      // -----------------------------------------------------------------------
+      evaluateQuestion(q, ans) {
+        if (q.type === 'writing') {
+          const text = typeof ans === 'string' ? ans.trim().toLowerCase() : '';
+          if (!text) return { isCorrect: false, statusLabel: 'Unanswered' };
+          const kps = (q.keyPoints || []).map(k => String(k).toLowerCase()).filter(Boolean);
+          const matched = kps.filter(k => text.includes(k)).length;
+          const passed = text.length >= 15 && (kps.length === 0 || matched >= 1);
+          return {
+            isCorrect: passed,
+            statusLabel: passed ? 'Key Points Covered' : 'Needs More Detail'
+          };
+        }
+        const isCorrect = typeof ans === 'number' && ans === q.correctIndex;
+        return {
+          isCorrect,
+          statusLabel: isCorrect ? 'Correct' : (typeof ans === 'number' ? 'Incorrect' : 'Unanswered')
+        };
+      },
+
+      finishQuiz() {
+        if (this.examTimerInterval) clearInterval(this.examTimerInterval);
+        this.switchView('resultsView');
+
+        let correctCount = 0;
+        this.questions.forEach((q, idx) => {
+          if (this.evaluateQuestion(q, this.userAnswers[idx]).isCorrect) {
+            correctCount += 1;
+          }
+        });
+
+        const total = this.questions.length || 1;
+        const pct = Math.round((correctCount / total) * 100);
+        document.getElementById('resultScorePercent').textContent = `${pct}%`;
+        document.getElementById('resultScoreFraction').textContent = `${correctCount} / ${this.questions.length}`;
+        document.getElementById('resultsSubtitle').textContent =
+          `Mode: ${this.quizMode === 'exam' ? `Exam (${this.examMinutes} min)` : 'Practice'} • Difficulty: ${this.difficulty}`;
+
+        this.setReviewFilter('all');
+      },
+
+      setReviewFilter(filter) {
+        this.reviewFilter = filter;
+        document.querySelectorAll('.review-filter-btn').forEach(btn => {
+          const active = btn.getAttribute('data-review-filter') === filter;
+          btn.classList.toggle('accent-bg', active);
+          btn.classList.toggle('surface-subtle', !active);
+        });
+        this.renderReviewList();
+      },
+
+      renderReviewList() {
+        const container = document.getElementById('reviewList');
+        const items = this.questions
+          .map((q, idx) => ({ q, idx, evalRes: this.evaluateQuestion(q, this.userAnswers[idx]) }))
+          .filter(({ evalRes }) => {
+            if (this.reviewFilter === 'correct') return evalRes.isCorrect;
+            if (this.reviewFilter === 'incorrect') return !evalRes.isCorrect;
+            return true;
+          });
+
+        if (!items.length) {
+          container.innerHTML = `<div class="surface-card rounded-2xl p-6 text-center text-sm text-sub">No questions match this filter.</div>`;
+          return;
+        }
+
+        container.innerHTML = items.map(({ q, idx, evalRes }) => {
+          const ans = this.userAnswers[idx];
+          let answerSummary = '';
+          if (q.type === 'writing') {
+            answerSummary = `
+              <p class="text-xs text-sub"><strong class="text-main">Your Answer:</strong> ${this.escapeHTML(typeof ans === 'string' && ans.trim() ? ans : '(No answer written)')}</p>
+              <p class="text-xs text-sub"><strong class="text-main">Model Answer:</strong> ${this.escapeHTML(q.modelAnswer || '')}</p>
+            `;
+          } else {
+            const userOpt = typeof ans === 'number' ? q.options[ans] : '(No selection)';
+            const rightOpt = q.options[q.correctIndex];
+            answerSummary = `
+              <p class="text-xs text-sub"><strong class="text-main">Your Choice:</strong> ${this.escapeHTML(userOpt)}</p>
+              <p class="text-xs text-sub"><strong class="text-main">Correct Answer:</strong> ${this.escapeHTML(rightOpt)}</p>
+            `;
+          }
+
+          return `
+            <div class="surface-card rounded-2xl p-5 space-y-2.5">
+              <div class="flex items-center justify-between gap-2 flex-wrap">
+                <span class="text-xs font-extrabold accent-text">Q${idx + 1} • ${this.escapeHTML(q.topic)} • ${this.escapeHTML(q.typeLabel)}</span>
+                <span class="text-xs font-extrabold px-2.5 py-0.5 rounded-lg ${evalRes.isCorrect ? 'bg-emerald-500/15 text-emerald-500' : 'bg-rose-500/15 text-rose-500'}">${evalRes.statusLabel}</span>
+              </div>
+              <p class="text-sm sm:text-base font-bold text-main">${this.escapeHTML(q.question)}</p>
+              ${answerSummary}
+              <p class="text-xs text-dim pt-1 border-t border-base">${this.escapeHTML(q.explanation || '')}</p>
+            </div>
+          `;
+        }).join('');
+      },
+
+      retakeCurrentQuiz() {
+        if (!this.questions.length) return;
+        this.launchQuiz();
+      },
+
+      goHome() {
+        if (this.examTimerInterval) clearInterval(this.examTimerInterval);
+        this.stopGenerationTimers();
+        this.abortGeneration = true;
+        this.isGenerating = false;
+        this.switchView('setupView');
+      },
+
+      switchView(viewId) {
+        ['setupView', 'generatingView', 'quizView', 'resultsView'].forEach(id => {
+          document.getElementById(id).classList.toggle('hidden', id !== viewId);
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+
+      exportQuizJSON() {
+        if (!this.questions.length) {
+          this.showToast('Generate questions first before exporting.', 'error');
+          return;
+        }
+        const blob = new Blob([JSON.stringify(this.questions, null, 2)], { type: 'application/json' });
+        this.downloadBlob(blob, 'lectureforge-quiz.json');
+      },
+
+      exportQuizHTML() {
+        if (!this.questions.length) {
+          this.showToast('Generate questions first before exporting.', 'error');
+          return;
+        }
+        const safeJson = JSON.stringify(this.questions).replace(/</g, '\\u003c');
+        const htmlDoc = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LectureForge Exported Quiz</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; max-width: 820px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; background: #0f172a; color: #f8fafc; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem; }
+    .meta { font-size: 0.78rem; color: #93c5fd; font-weight: 700; margin-bottom: 0.4rem; }
+    .q { font-weight: 700; font-size: 1.05rem; margin-bottom: 0.75rem; }
+    .opt { display: block; padding: 0.55rem 0.75rem; margin: 0.35rem 0; border-radius: 8px; background: #0f172a; border: 1px solid #334155; cursor: pointer; }
+    .exp { margin-top: 0.6rem; font-size: 0.88rem; color: #cbd5e1; }
+  </style>
+</head>
+<body>
+  <h1>LectureForge Study Quiz</h1>
+  <div id="quiz"></div>
+  <script>
+    const questions = ${safeJson};
+    const root = document.getElementById('quiz');
+    questions.forEach((q, i) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      let body = '<div class="meta">Q' + (i + 1) + ' • ' + q.topic + ' • ' + q.typeLabel + '</div><div class="q">' + q.question + '</div>';
+      if (Array.isArray(q.options) && q.options.length) {
+        q.options.forEach((opt, idx) => {
+          body += '<label class="opt"><input type="radio" name="q' + i + '" onclick="showExp(' + i + ')"> ' + opt + '</label>';
+        });
+      } else {
+        body += '<textarea rows="3" style="width:100%;border-radius:8px;padding:0.6rem;background:#0f172a;color:#fff;border:1px solid #334155;" placeholder="Write your answer..."></textarea><button onclick="showExp(' + i + ')" style="margin-top:0.5rem;padding:0.45rem 0.8rem;border-radius:8px;cursor:pointer;">Show Model Answer</button>';
+      }
+      body += '<div id="exp' + i + '" class="exp" style="display:none;"><strong>Answer / Explanation:</strong> ' + (q.modelAnswer || '') + ' ' + (q.explanation || '') + '</div>';
+      card.innerHTML = body;
+      root.appendChild(card);
+    });
+    function showExp(i) { document.getElementById('exp' + i).style.display = 'block'; }
+  <\/script>
+</body>
+</html>`;
+        const blob = new Blob([htmlDoc], { type: 'text/html' });
+        this.downloadBlob(blob, 'lectureforge-quiz.html');
+      },
+
+      downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        this.showToast(`Downloaded ${filename}`, 'success');
+      },
+
+      showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = 'pointer-events-auto surface-elevated rounded-2xl px-4 py-3 text-xs sm:text-sm font-bold text-main shadow-xl animate-fade-in flex items-center justify-between gap-3';
+        toast.innerHTML = `<span>${this.escapeHTML(message)}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transition = 'opacity 0.25s ease';
+          setTimeout(() => toast.remove(), 260);
+        }, 3400);
+      },
+
+      escapeHTML(str) {
+        return String(str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => app.init());
+  </script>
+</body>
+</html>
